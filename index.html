@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Informasi Cek Kehadiran Mahasiswa (SIM-Presensi)</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Custom Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .tab-content {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+        .tab-content.active {
+            display: block;
+            opacity: 1;
+        }
+        /* Custom scrollbar for modern feel */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="h-full text-slate-800 antialiased flex flex-col font-sans">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo & Title -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('presensi')">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
+                        <i class="fa-solid me-0.5 fa-clipboard-user"></i>
+                    </div>
+                    <div>
+                        <span class="font-bold text-lg tracking-tight text-white block leading-tight">SIM-Presensi</span>
+                        <span class="text-xs text-sky-400 font-medium">Sistem Kehadiran Mahasiswa</span>
+                    </div>
+                </div>
+
+                <!-- Desktop Navigation Buttons -->
+                <nav class="hidden md:flex items-center space-x-2">
+                    <button id="nav-presensi" onclick="switchTab('presensi')" 
+                        class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-2 bg-sky-600 text-white shadow-sm">
+                        <i class="fa-solid fa-pen-to-square text-xs"></i>
+                        <span>Input & Riwayat Presensi</span>
+                    </button>
+                    <button id="nav-admin" onclick="switchTab('admin')" 
+                        class="nav-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-all duration-200 flex items-center space-x-2">
+                        <i class="fa-solid fa-user-shield text-xs"></i>
+                        <span>Menu Admin</span>
+                        <span id="badge-total-count" class="ml-1 px-2 py-0.5 text-xs bg-slate-700 text-sky-300 rounded-full font-semibold">0</span>
+                    </button>
+                </nav>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden">
+                    <button id="mobile-menu-btn" onclick="toggleMobileMenu()" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 focus:outline-none">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Dropdown Menu -->
+        <div id="mobile-menu" class="hidden md:hidden border-t border-slate-800 bg-slate-900 px-4 pt-2 pb-4 space-y-2">
+            <button onclick="switchTab('presensi'); toggleMobileMenu()" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-white bg-sky-600 flex items-center space-x-2">
+                <i class="fa-solid fa-pen-to-square"></i>
+                <span>Input & Riwayat Presensi</span>
+            </button>
+            <button onclick="switchTab('admin'); toggleMobileMenu()" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <span>Menu Admin</span>
+                </div>
+                <span id="mobile-badge-total-count" class="px-2 py-0.5 text-xs bg-slate-700 text-sky-300 rounded-full font-semibold">0</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+
+        <!-- ================= PAGE 1: USER / MAIN PRESENSI VIEW ================= -->
+        <section id="view-presensi" class="tab-content active space-y-6">
+            
+            <!-- Form Input Presensi (User) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6">
+                <div class="mb-5 border-b border-slate-100 pb-4">
+                    <h2 class="text-lg font-bold text-slate-800">Form Input Kehadiran</h2>
+                    <p class="text-xs text-slate-500">Silakan isi data kehadiran Anda dengan benar pada form di bawah ini.</p>
+                </div>
+                <form id="form-presensi-user" onsubmit="submitUserPresensi(event)" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">NIM *</label>
+                            <input type="text" id="user-nim" required placeholder="Contoh: 210101042" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Nama Lengkap *</label>
+                            <input type="text" id="user-nama" required placeholder="Contoh: Ahmad Rizky" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Mata Kuliah *</label>
+                            <input type="text" id="user-matkul" required placeholder="Contoh: Pemrograman Web" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Tanggal *</label>
+                            <input type="date" id="user-tanggal" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Status Kehadiran *</label>
+                            <select id="user-status" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-sky-500">
+                                <option value="Hadir">Hadir</option>
+                                <option value="Izin">Izin</option>
+                                <option value="Sakit">Sakit</option>
+                                <option value="Alpa">Alpa</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Catatan (Opsional)</label>
+                            <input type="text" id="user-catatan" placeholder="Alasan izin/sakit atau catatan lain..." class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                    </div>
+                    <div class="pt-4 flex justify-end">
+                        <button type="submit" class="px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold rounded-xl shadow-md transition-all flex items-center space-x-2">
+                            <i class="fa-solid fa-paper-plane text-xs"></i>
+                            <span>Kirim Presensi</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- User Attendance View (Full Width - Read Only) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 space-y-4">
+                
+                <!-- Table Header & Search Filters -->
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">Riwayat Kehadiran Mahasiswa</h2>
+                        <p class="text-xs text-slate-500">Cari dan lihat detail status presensi Anda berdasarkan NIM atau Nama</p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- Search Bar -->
+                        <div class="relative flex-1 sm:w-64">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                            </div>
+                            <input type="text" id="search-input" onkeyup="filterData()" placeholder="Cari NIM atau Nama..."
+                                class="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl focus:ring-2 focus:ring-sky-500 focus:bg-white transition-all duration-150 outline-none">
+                            <button onclick="clearSearch()" id="btn-clear-search" class="hidden absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600">
+                                <i class="fa-solid fa-xmark text-xs"></i>
+                            </button>
+                        </div>
+
+                        <!-- Filter Status -->
+                        <select id="filter-status" onchange="filterData()" class="py-2 px-3 bg-slate-50 border border-slate-300 text-slate-700 text-xs rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+                            <option value="ALL">Semua Status</option>
+                            <option value="Hadir">Hadir</option>
+                            <option value="Izin">Izin</option>
+                            <option value="Sakit">Sakit</option>
+                            <option value="Alpa">Alpa</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Main Read-Only Table -->
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 text-[11px] font-bold uppercase tracking-wider border-b border-slate-200">
+                                <th class="py-3 px-4">Mahasiswa</th>
+                                <th class="py-3 px-4">Mata Kuliah</th>
+                                <th class="py-3 px-4">Tanggal</th>
+                                <th class="py-3 px-4 text-center">Status</th>
+                                <th class="py-3 px-4">Catatan</th>
+                                <th class="py-3 px-4 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body-presensi" class="divide-y divide-slate-100 text-sm">
+                            <!-- Dynamic read-only rows rendered via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Table Footer Info -->
+                <div class="flex items-center justify-between text-xs text-slate-500 pt-2">
+                    <span>Menampilkan <strong id="count-visible" class="text-slate-800">0</strong> dari <strong id="count-total" class="text-slate-800">0</strong> entri</span>
+                    <span class="text-slate-400 italic"><i class="fa-solid fa-lock text-[10px] mr-1"></i> Data dikelola oleh Admin</span>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ================= PAGE 2: MENU ADMIN VIEW ================= -->
+        <section id="view-admin" class="tab-content space-y-6">
+            
+            <!-- Admin Top Header Card -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-2xl">
+                        <i class="fa-solid fa-user-gear"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h1 class="text-2xl font-bold text-slate-900">Dashboard Admin Presensi</h1>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
+                                Akses Penuh
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">Panel utama Admin untuk menambah data presensi baru, mengubah/meng-update status, dan mengelola entri mahasiswa.</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3">
+                    <button onclick="openAddModal()" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all duration-150 flex items-center space-x-2">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>+ Input Presensi Baru</span>
+                    </button>
+                    <button onclick="exportToCSV()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all duration-150 flex items-center space-x-2">
+                        <i class="fa-solid fa-file-excel"></i>
+                        <span>Ekspor CSV</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- KPI Statistics Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Catatan</span>
+                    <div class="flex items-baseline justify-between mt-2">
+                        <span id="kpi-total" class="text-2xl font-bold text-slate-900">0</span>
+                        <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-database"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl border border-emerald-200/80 shadow-sm flex flex-col justify-between bg-emerald-50/20">
+                    <span class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Total Hadir</span>
+                    <div class="flex items-baseline justify-between mt-2">
+                        <span id="kpi-hadir" class="text-2xl font-bold text-emerald-600">0</span>
+                        <span id="kpi-hadir-percent" class="text-xs font-medium text-emerald-600">0%</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl border border-amber-200/80 shadow-sm flex flex-col justify-between bg-amber-50/20">
+                    <span class="text-xs font-semibold text-amber-600 uppercase tracking-wider">Total Izin</span>
+                    <div class="flex items-baseline justify-between mt-2">
+                        <span id="kpi-izin" class="text-2xl font-bold text-amber-600">0</span>
+                        <span id="kpi-izin-percent" class="text-xs font-medium text-amber-600">0%</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl border border-indigo-200/80 shadow-sm flex flex-col justify-between bg-indigo-50/20">
+                    <span class="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Total Sakit</span>
+                    <div class="flex items-baseline justify-between mt-2">
+                        <span id="kpi-sakit" class="text-2xl font-bold text-indigo-600">0</span>
+                        <span id="kpi-sakit-percent" class="text-xs font-medium text-indigo-600">0%</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl border border-rose-200/80 shadow-sm flex flex-col justify-between bg-rose-50/20 col-span-2 md:col-span-1">
+                    <span class="text-xs font-semibold text-rose-600 uppercase tracking-wider">Total Alpa</span>
+                    <div class="flex items-baseline justify-between mt-2">
+                        <span id="kpi-alpa" class="text-2xl font-bold text-rose-600">0</span>
+                        <span id="kpi-alpa-percent" class="text-xs font-medium text-rose-600">0%</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Admin Data Table with Quick Status Edit Options -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 space-y-4">
+                
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">Manajemen & Update Status Presensi</h2>
+                        <p class="text-xs text-slate-500">Admin memiliki wewenang penuh untuk menambah, mengedit status, atau menghapus data presensi.</p>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <div class="relative">
+                            <input type="text" id="admin-search-input" onkeyup="filterAdminData()" placeholder="Cari di menu admin..."
+                                class="pl-8 pr-3 py-2 bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl focus:ring-2 focus:ring-amber-500 outline-none w-56">
+                            <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-xs text-slate-400"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700 text-[11px] font-bold uppercase tracking-wider border-b border-slate-200">
+                                <th class="py-3.5 px-4">No.</th>
+                                <th class="py-3.5 px-4">NIM</th>
+                                <th class="py-3.5 px-4">Nama Mahasiswa</th>
+                                <th class="py-3.5 px-4">Mata Kuliah</th>
+                                <th class="py-3.5 px-4">Tanggal</th>
+                                <th class="py-3.5 px-4">Status Saat Ini</th>
+                                <th class="py-3.5 px-4 text-center">Aksi Admin</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body-admin" class="divide-y divide-slate-100 text-sm">
+                            <!-- Admin table rows rendered dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Footer Admin Controls -->
+                <div class="flex items-center justify-between text-xs text-slate-500 pt-2">
+                    <span>Aksi sensitif admin:</span>
+                    <button onclick="resetDataToDefault()" class="text-slate-400 hover:text-rose-600 transition-colors duration-150 flex items-center space-x-1">
+                        <i class="fa-solid fa-rotate text-xs"></i>
+                        <span>Reset Data ke Standar Awal</span>
+                    </button>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- ================= MODALS & OVERLAYS ================= -->
+
+    <!-- Modal 1: Edit & Add Record Modal (Admin Only) -->
+    <div id="edit-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-100 transform transition-all">
+            <div class="bg-slate-900 px-6 py-4 text-white flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-pen-to-square text-sky-400"></i>
+                    <h3 id="modal-form-title" class="font-bold text-base">Kelola Data Presensi Mahasiswa</h3>
+                </div>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="edit-modal-form" onsubmit="saveEditModal(event)" class="p-6 space-y-4">
+                <input type="hidden" id="modal-edit-id">
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">NIM (Nomor Induk Mahasiswa) *</label>
+                    <input type="text" id="modal-edit-nim" required placeholder="Contoh: 210101042" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-sky-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Nama Mahasiswa *</label>
+                    <input type="text" id="modal-edit-nama" required placeholder="Contoh: Ahmad Rizky" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-sky-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Mata Kuliah *</label>
+                    <input type="text" id="modal-edit-matkul" required placeholder="Contoh: Pemrograman Web" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-sky-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Tanggal *</label>
+                        <input type="date" id="modal-edit-tanggal" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Status Kehadiran *</label>
+                        <select id="modal-edit-status" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-sky-500">
+                            <option value="Hadir">Hadir</option>
+                            <option value="Izin">Izin</option>
+                            <option value="Sakit">Sakit</option>
+                            <option value="Alpa">Alpa</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Catatan Keterangan (Opsional)</label>
+                    <textarea id="modal-edit-catatan" rows="2" placeholder="Catatan atau alasan ketidakhadiran..." class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-sky-500"></textarea>
+                </div>
+
+                <div class="pt-3 flex items-center justify-end space-x-3 border-t border-slate-100">
+                    <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all">
+                        Simpan Data
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Detail Student Record Modal -->
+    <div id="detail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden border border-slate-100">
+            <div class="bg-sky-900 px-6 py-4 text-white flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-address-card text-sky-300"></i>
+                    <h3 class="font-bold text-base">Detail Kehadiran Mahasiswa</h3>
+                </div>
+                <button onclick="closeDetailModal()" class="text-slate-300 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <div class="bg-sky-50 border border-sky-100 rounded-xl p-4 flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-full bg-sky-600 text-white flex items-center justify-center font-bold text-xl">
+                        <i class="fa-solid fa-user-graduate"></i>
+                    </div>
+                    <div>
+                        <h4 id="detail-nama" class="font-bold text-slate-900 text-base">Nama Mahasiswa</h4>
+                        <p id="detail-nim" class="text-xs font-mono text-sky-700 font-semibold">NIM: -</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 text-xs">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                        <span class="text-slate-400 block mb-1">Mata Kuliah</span>
+                        <span id="detail-matkul" class="font-semibold text-slate-800 text-sm block">-</span>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                        <span class="text-slate-400 block mb-1">Tanggal Presensi</span>
+                        <span id="detail-tanggal" class="font-semibold text-slate-800 text-sm block">-</span>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                        <span class="text-slate-400 block mb-1">Status Kehadiran</span>
+                        <div id="detail-status-badge" class="mt-1"></div>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                        <span class="text-slate-400 block mb-1">Waktu Diinput</span>
+                        <span id="detail-created-at" class="font-semibold text-slate-700 text-xs block">-</span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                    <span class="text-slate-400 text-xs block mb-1">Catatan Keterangan</span>
+                    <p id="detail-catatan" class="text-xs text-slate-700 italic">-</p>
+                </div>
+
+                <div class="pt-2 flex justify-end">
+                    <button onclick="closeDetailModal()" class="px-5 py-2 bg-slate-800 text-white text-xs font-semibold rounded-xl hover:bg-slate-900 transition-colors">
+                        Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Confirmation Delete Modal -->
+    <div id="delete-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl p-6 space-y-4 text-center">
+            <div class="w-14 h-14 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto text-2xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800">Konfirmasi Hapus</h3>
+            <p class="text-xs text-slate-500">Apakah Anda yakin ingin menghapus data presensi mahasiswa ini? Tindakan ini tidak dapat dibatalkan.</p>
+            
+            <input type="hidden" id="delete-target-id">
+
+            <div class="flex items-center justify-center space-x-3 pt-2">
+                <button onclick="closeDeleteModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl">
+                    Batal
+                </button>
+                <button onclick="executeDelete()" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl shadow-md">
+                    Ya, Hapus Data
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- ================= JAVASCRIPT LOGIC ================= -->
+    <script>
+        /* STORAGE KEY CONSTANT */
+        const STORAGE_KEY = 'SIM_PRESENSI_MAHASISWA_DATA_V2';
+
+        /* INITIAL DUMMY DATA FOR FIRST TIME USERS */
+        const sampleData = [
+            {
+                id: '1690000000001',
+                nim: '210101001',
+                nama: 'Aditya Pratama',
+                mataKuliah: 'Pemrograman Web',
+                tanggal: '2026-10-20',
+                status: 'Hadir',
+                catatan: 'Tiba tepat waktu',
+                createdAt: '2026-10-20 08:00:00'
+            },
+            {
+                id: '1690000000002',
+                nim: '210101002',
+                nama: 'Bintang Permata',
+                mataKuliah: 'Pemrograman Web',
+                tanggal: '2026-10-20',
+                status: 'Izin',
+                catatan: 'Menghadiri Lomba Kontestasi Nasional',
+                createdAt: '2026-10-20 08:05:00'
+            },
+            {
+                id: '1690000000003',
+                nim: '210101003',
+                nama: 'Citra Dewi',
+                mataKuliah: 'Basis Data',
+                tanggal: '2026-10-19',
+                status: 'Sakit',
+                catatan: 'Surat dokter terlampir',
+                createdAt: '2026-10-19 09:15:00'
+            },
+            {
+                id: '1690000000004',
+                nim: '210101004',
+                nama: 'Doni Kurniawan',
+                mataKuliah: 'Jaringan Komputer',
+                tanggal: '2026-10-18',
+                status: 'Alpa',
+                catatan: 'Tanpa konfirmasi',
+                createdAt: '2026-10-18 10:30:00'
+            }
+        ];
+
+        /* STATE MANAGEMENT */
+        let presensiData = [];
+
+        /* APP INITIALIZATION */
+        window.addEventListener('DOMContentLoaded', () => {
+            // Load records from LocalStorage or seed default data
+            loadDataFromStorage();
+
+            // Set default date for user form
+            const today = new Date().toISOString().split('T')[0];
+            if(document.getElementById('user-tanggal')) {
+                document.getElementById('user-tanggal').value = today;
+            }
+
+            // Render tables & update analytics UI
+            renderAllViews();
+        });
+
+        /* LOCALSTORAGE HANDLERS */
+        function loadDataFromStorage() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    presensiData = JSON.parse(saved);
+                } catch (e) {
+                    console.error('Gagal membaca data dari storage', e);
+                    presensiData = [...sampleData];
+                    saveDataToStorage();
+                }
+            } else {
+                presensiData = [...sampleData];
+                saveDataToStorage();
+            }
+        }
+
+        function saveDataToStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(presensiData));
+            updateBadgesAndKPI();
+        }
+
+        function resetDataToDefault() {
+            presensiData = [...sampleData];
+            saveDataToStorage();
+            renderAllViews();
+            showToast('Data presensi berhasil dikembalikan ke data awal!', 'info');
+        }
+
+        /* NAVIGATION & TAB SWITCHING */
+        function switchTab(tabName) {
+            const tabs = ['presensi', 'admin'];
+            tabs.forEach(t => {
+                const viewEl = document.getElementById(`view-${t}`);
+                const navBtn = document.getElementById(`nav-${t}`);
+                
+                if (t === tabName) {
+                    viewEl.classList.add('active');
+                    if (navBtn) {
+                        navBtn.className = 'nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-2 bg-sky-600 text-white shadow-sm';
+                    }
+                } else {
+                    viewEl.classList.remove('active');
+                    if (navBtn) {
+                        navBtn.className = 'nav-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-all duration-200 flex items-center space-x-2';
+                    }
+                }
+            });
+
+            renderAllViews();
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        /* RENDER FUNCTIONS FOR TABLES AND STATS */
+        function renderAllViews() {
+            renderMainTable();
+            renderAdminTable();
+            updateBadgesAndKPI();
+        }
+
+        // Render main view history table (READ-ONLY FOR USER)
+        function renderMainTable() {
+            const tbody = document.getElementById('table-body-presensi');
+            const searchKeyword = document.getElementById('search-input').value.toLowerCase().trim();
+            const statusFilter = document.getElementById('filter-status').value;
+
+            // Filter logic
+            const filtered = presensiData.filter(item => {
+                const matchesSearch = item.nim.toLowerCase().includes(searchKeyword) || 
+                                      item.nama.toLowerCase().includes(searchKeyword);
+                const matchesStatus = statusFilter === 'ALL' || item.status === statusFilter;
+                return matchesSearch && matchesStatus;
+            });
+
+            document.getElementById('count-visible').textContent = filtered.length;
+            document.getElementById('count-total').textContent = presensiData.length;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-slate-400">
+                            <i class="fa-regular fa-folder-open text-3xl mb-2 block"></i>
+                            <span>Tidak ada data presensi yang ditemukan</span>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // USER CAN ONLY VIEW / SEE DETAILS - NO EDIT OR DELETE BUTTONS
+            tbody.innerHTML = filtered.map(item => `
+                <tr class="hover:bg-slate-50/80 transition-colors">
+                    <td class="py-3 px-4">
+                        <div class="font-bold text-slate-900">${escapeHtml(item.nama)}</div>
+                        <div class="text-xs font-mono text-slate-500">NIM: ${escapeHtml(item.nim)}</div>
+                    </td>
+                    <td class="py-3 px-4 text-slate-700 font-medium">${escapeHtml(item.mataKuliah)}</td>
+                    <td class="py-3 px-4 text-slate-600">${formatDate(item.tanggal)}</td>
+                    <td class="py-3 px-4 text-center">
+                        ${getStatusBadgeHtml(item.status)}
+                    </td>
+                    <td class="py-3 px-4 text-slate-500 text-xs max-w-xs truncate" title="${escapeHtml(item.catatan)}">
+                        ${escapeHtml(item.catatan)}
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <button onclick="openDetailModal('${item.id}')" title="Lihat Detail Mahasiswa"
+                            class="px-3 py-1.5 text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-lg transition-colors border border-sky-200 inline-flex items-center space-x-1">
+                            <i class="fa-solid fa-eye text-xs"></i>
+                            <span>Detail</span>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Render Admin View table (FULL ADMIN ACCESS: ADD, EDIT, DELETE)
+        function renderAdminTable() {
+            const tbody = document.getElementById('table-body-admin');
+            const searchKeyword = (document.getElementById('admin-search-input')?.value || '').toLowerCase().trim();
+
+            const filtered = presensiData.filter(item => {
+                return item.nim.toLowerCase().includes(searchKeyword) || 
+                       item.nama.toLowerCase().includes(searchKeyword) ||
+                       item.mataKuliah.toLowerCase().includes(searchKeyword);
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="py-8 text-center text-slate-400">
+                            <i class="fa-solid fa-user-slash text-3xl mb-2 block"></i>
+                            <span>Tidak ada data pada panel admin</span>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map((item, idx) => `
+                <tr class="hover:bg-slate-50/80 transition-colors">
+                    <td class="py-3.5 px-4 font-mono text-xs text-slate-400">${idx + 1}</td>
+                    <td class="py-3.5 px-4 font-mono font-semibold text-sky-700">${escapeHtml(item.nim)}</td>
+                    <td class="py-3.5 px-4 font-bold text-slate-900">${escapeHtml(item.nama)}</td>
+                    <td class="py-3.5 px-4 text-slate-700 text-xs">${escapeHtml(item.mataKuliah)}</td>
+                    <td class="py-3.5 px-4 text-slate-600 text-xs">${formatDate(item.tanggal)}</td>
+                    <td class="py-3.5 px-4">
+                        ${getStatusBadgeHtml(item.status)}
+                    </td>
+                    <td class="py-3.5 px-4 text-center">
+                        <div class="flex items-center justify-center space-x-2">
+                            <button onclick="openDetailModal('${item.id}')" title="Detail Mahasiswa"
+                                class="p-1.5 text-slate-500 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                            <button onclick="openEditModal('${item.id}')" 
+                                class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-semibold transition-colors flex items-center space-x-1 border border-amber-200">
+                                <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                <span>Edit / Status</span>
+                            </button>
+                            <button onclick="confirmDelete('${item.id}')" title="Hapus Presensi"
+                                class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        /* UPDATE KPI & ANALYTICS DATA */
+        function updateBadgesAndKPI() {
+            const total = presensiData.length;
+            const hadir = presensiData.filter(d => d.status === 'Hadir').length;
+            const izin = presensiData.filter(d => d.status === 'Izin').length;
+            const sakit = presensiData.filter(d => d.status === 'Sakit').length;
+            const alpa = presensiData.filter(d => d.status === 'Alpa').length;
+
+            const calcPercent = (val) => total > 0 ? Math.round((val / total) * 100) + '%' : '0%';
+
+            document.getElementById('badge-total-count').textContent = total;
+            document.getElementById('mobile-badge-total-count').textContent = total;
+
+            document.getElementById('kpi-total').textContent = total;
+            document.getElementById('kpi-hadir').textContent = hadir;
+            document.getElementById('kpi-hadir-percent').textContent = calcPercent(hadir);
+
+            document.getElementById('kpi-izin').textContent = izin;
+            document.getElementById('kpi-izin-percent').textContent = calcPercent(izin);
+
+            document.getElementById('kpi-sakit').textContent = sakit;
+            document.getElementById('kpi-sakit-percent').textContent = calcPercent(sakit);
+
+            document.getElementById('kpi-alpa').textContent = alpa;
+            document.getElementById('kpi-alpa-percent').textContent = calcPercent(alpa);
+        }
+
+        /* SEARCH & FILTER HANDLERS */
+        function filterData() {
+            const searchInput = document.getElementById('search-input');
+            const btnClear = document.getElementById('btn-clear-search');
+            if (searchInput.value) {
+                btnClear.classList.remove('hidden');
+            } else {
+                btnClear.classList.add('hidden');
+            }
+            renderMainTable();
+        }
+
+        function filterAdminData() {
+            renderAdminTable();
+        }
+
+        function clearSearch() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('btn-clear-search').classList.add('hidden');
+            renderMainTable();
+        }
+
+        /* USER FORM SUBMISSION HANDLER */
+        function submitUserPresensi(e) {
+            e.preventDefault();
+            const nim = document.getElementById('user-nim').value.trim();
+            const nama = document.getElementById('user-nama').value.trim();
+            const mataKuliah = document.getElementById('user-matkul').value.trim();
+            const tanggal = document.getElementById('user-tanggal').value;
+            const status = document.getElementById('user-status').value;
+            const catatan = document.getElementById('user-catatan').value.trim() || '-';
+
+            if (!nim || !nama || !mataKuliah || !tanggal || !status) {
+                showToast('Mohon lengkapi form dengan benar.', 'error');
+                return;
+            }
+
+            const newRecord = {
+                id: Date.now().toString(),
+                nim,
+                nama,
+                mataKuliah,
+                tanggal,
+                status,
+                catatan,
+                createdAt: new Date().toLocaleString('id-ID')
+            };
+
+            presensiData.unshift(newRecord);
+            saveDataToStorage();
+            renderAllViews();
+            
+            // Reset form
+            document.getElementById('form-presensi-user').reset();
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('user-tanggal').value = today;
+
+            showToast('Presensi Anda berhasil dicatat!', 'success');
+        }
+
+        /* MODAL HANDLERS FOR ADMIN (ADD & EDIT) */
+        function openAddModal() {
+            document.getElementById('modal-form-title').textContent = 'Tambah Presensi Mahasiswa Baru';
+            document.getElementById('modal-edit-id').value = '';
+            document.getElementById('modal-edit-nim').value = '';
+            document.getElementById('modal-edit-nama').value = '';
+            document.getElementById('modal-edit-matkul').value = '';
+            
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('modal-edit-tanggal').value = today;
+            document.getElementById('modal-edit-status').value = 'Hadir';
+            document.getElementById('modal-edit-catatan').value = '';
+
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function openEditModal(id) {
+            const item = presensiData.find(d => d.id === id);
+            if (!item) return;
+
+            document.getElementById('modal-form-title').textContent = 'Update Status Presensi Mahasiswa';
+            document.getElementById('modal-edit-id').value = item.id;
+            document.getElementById('modal-edit-nim').value = item.nim;
+            document.getElementById('modal-edit-nama').value = item.nama;
+            document.getElementById('modal-edit-matkul').value = item.mataKuliah;
+            document.getElementById('modal-edit-tanggal').value = item.tanggal;
+            document.getElementById('modal-edit-status').value = item.status;
+            document.getElementById('modal-edit-catatan').value = item.catatan === '-' ? '' : item.catatan;
+
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        }
+
+        function saveEditModal(e) {
+            e.preventDefault();
+            const id = document.getElementById('modal-edit-id').value;
+            const nim = document.getElementById('modal-edit-nim').value.trim();
+            const nama = document.getElementById('modal-edit-nama').value.trim();
+            const mataKuliah = document.getElementById('modal-edit-matkul').value.trim();
+            const tanggal = document.getElementById('modal-edit-tanggal').value;
+            const status = document.getElementById('modal-edit-status').value;
+            const catatan = document.getElementById('modal-edit-catatan').value.trim() || '-';
+
+            if (!nim || !nama || !mataKuliah || !tanggal || !status) {
+                showToast('Mohon lengkapi seluruh field bertanda *', 'error');
+                return;
+            }
+
+            if (id) {
+                // Edit existing
+                const index = presensiData.findIndex(item => item.id === id);
+                if (index !== -1) {
+                    presensiData[index] = {
+                        ...presensiData[index],
+                        nim,
+                        nama,
+                        mataKuliah,
+                        tanggal,
+                        status,
+                        catatan
+                    };
+                    showToast('Status presensi berhasil diupdate oleh Admin!', 'success');
+                }
+            } else {
+                // Add new record by Admin
+                const newRecord = {
+                    id: Date.now().toString(),
+                    nim,
+                    nama,
+                    mataKuliah,
+                    tanggal,
+                    status,
+                    catatan,
+                    createdAt: new Date().toLocaleString('id-ID')
+                };
+                presensiData.unshift(newRecord);
+                showToast('Presensi mahasiswa baru berhasil ditambahkan oleh Admin!', 'success');
+            }
+
+            saveDataToStorage();
+            renderAllViews();
+            closeEditModal();
+        }
+
+        /* DETAIL MODAL HANDLER */
+        function openDetailModal(id) {
+            const item = presensiData.find(d => d.id === id);
+            if (!item) return;
+
+            document.getElementById('detail-nama').textContent = item.nama;
+            document.getElementById('detail-nim').textContent = `NIM: ${item.nim}`;
+            document.getElementById('detail-matkul').textContent = item.mataKuliah;
+            document.getElementById('detail-tanggal').textContent = formatDate(item.tanggal);
+            document.getElementById('detail-status-badge').innerHTML = getStatusBadgeHtml(item.status);
+            document.getElementById('detail-created-at').textContent = item.createdAt || '-';
+            document.getElementById('detail-catatan').textContent = item.catatan || '-';
+
+            document.getElementById('detail-modal').classList.remove('hidden');
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detail-modal').classList.add('hidden');
+        }
+
+        /* DELETE CONFIRMATION MODAL */
+        function confirmDelete(id) {
+            document.getElementById('delete-target-id').value = id;
+            document.getElementById('delete-modal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('delete-modal').classList.add('hidden');
+        }
+
+        function executeDelete() {
+            const id = document.getElementById('delete-target-id').value;
+            presensiData = presensiData.filter(item => item.id !== id);
+
+            saveDataToStorage();
+            renderAllViews();
+            closeDeleteModal();
+            showToast('Data presensi berhasil dihapus oleh Admin.', 'info');
+        }
+
+        /* EXPORT TO CSV */
+        function exportToCSV() {
+            if (presensiData.length === 0) {
+                showToast('Tidak ada data untuk diekspor', 'error');
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "NIM,Nama Mahasiswa,Mata Kuliah,Tanggal,Status Kehadiran,Catatan\n";
+
+            presensiData.forEach(row => {
+                const rowStr = `"${row.nim}","${row.nama}","${row.mataKuliah}","${row.tanggal}","${row.status}","${row.catatan}"`;
+                csvContent += rowStr + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Rekap_Presensi_Mahasiswa_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast('File CSV berhasil diunduh!', 'success');
+        }
+
+        /* HELPER FUNCTIONS & BADGE STYLING */
+        function getStatusBadgeHtml(status) {
+            switch (status) {
+                case 'Hadir':
+                    return `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                <i class="fa-solid fa-circle-check text-[10px] mr-1 text-emerald-600"></i> Hadir
+                            </span>`;
+                case 'Izin':
+                    return `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                                <i class="fa-solid fa-clock text-[10px] mr-1 text-amber-600"></i> Izin
+                            </span>`;
+                case 'Sakit':
+                    return `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                <i class="fa-solid fa-notes-medical text-[10px] mr-1 text-indigo-600"></i> Sakit
+                            </span>`;
+                case 'Alpa':
+                    return `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200">
+                                <i class="fa-solid fa-circle-xmark text-[10px] mr-1 text-rose-600"></i> Alpa
+                            </span>`;
+                default:
+                    return `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-800">${status}</span>`;
+            }
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            const date = new Date(dateString);
+            return isNaN(date.getTime()) ? dateString : date.toLocaleDateString('id-ID', options);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;")
+                      .replace(/</g, "&lt;")
+                      .replace(/>/g, "&gt;")
+                      .replace(/"/g, "&quot;")
+                      .replace(/'/g, "&#039;");
+        }
+
+        /* CUSTOM TOAST NOTIFICATION */
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            let bgColors = 'bg-slate-900 text-white';
+            let icon = 'fa-circle-info text-sky-400';
+
+            if (type === 'success') {
+                bgColors = 'bg-slate-900 text-white border-l-4 border-emerald-500';
+                icon = 'fa-circle-check text-emerald-400';
+            } else if (type === 'error') {
+                bgColors = 'bg-slate-900 text-white border-l-4 border-rose-500';
+                icon = 'fa-triangle-exclamation text-rose-400';
+            } else if (type === 'info') {
+                bgColors = 'bg-slate-900 text-white border-l-4 border-sky-500';
+                icon = 'fa-circle-info text-sky-400';
+            }
+
+            toast.className = `flex items-center space-x-3 px-4 py-3 rounded-xl shadow-xl text-xs font-medium transform transition-all duration-300 translate-y-2 opacity-0 ${bgColors} pointer-events-auto max-w-sm`;
+            toast.innerHTML = `
+                <i class="fa-solid ${icon} text-base"></i>
+                <span class="flex-1">${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3200);
+        }
+    </script>
+</body>
+</html>
